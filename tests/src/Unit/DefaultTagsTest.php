@@ -39,7 +39,12 @@ class DefaultTagsTest extends UnitTestCase {
     $this->assertSame('[node:title] | [site:name]', $this->tags['node']['title']);
     // An empty value counts as unset.
     $this->assertSame('[node:title]', $this->tags['node']['schema_web_page_name']);
-    $this->assertSame(DefaultTags::DEFAULTS['node'], array_intersect_key($this->tags['node'], DefaultTags::DEFAULTS['node']));
+    // Every default is now set; key order follows the site's existing tags.
+    $expected = DefaultTags::DEFAULTS['node'];
+    $actual = array_intersect_key($this->tags['node'], $expected);
+    ksort($expected);
+    ksort($actual);
+    $this->assertSame($expected, $actual);
     // Fully set already: nothing reported, nothing saved.
     $this->assertArrayNotHasKey('taxonomy_term', $added);
   }
