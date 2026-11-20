@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * @file
+ * Install and uninstall hooks for Penn Global Metatags.
+ */
+
+use Drupal\penn_global_metatags\DefaultTags;
+
+/**
+ * Implements hook_install().
+ *
+ * Adds the module's tags to the site's metatag defaults. Skipped during a
+ * config import, where the imported config already says what the site wants.
+ */
+function penn_global_metatags_install($is_syncing) {
+  if ($is_syncing) {
+    return;
+  }
+
+  $added = (new DefaultTags(\Drupal::entityTypeManager()))->apply();
+  if ($added) {
+    \Drupal::messenger()->addStatus(t('Penn Global Metatags added schema.org tags to these metatag defaults: @ids. Review them under Configuration > Search and metadata > Metatag.', [
+      '@ids' => implode(', ', array_keys($added)),
+    ]));
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Removes the tags the module added, so no defaults point at tag plugins and
+ * tokens that no longer exist.
+ */
+function penn_global_metatags_uninstall($is_syncing) {
+  if ($is_syncing) {
+    return;
+  }
+
+  (new DefaultTags(\Drupal::entityTypeManager()))->remove();
+}

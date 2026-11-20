@@ -11,6 +11,10 @@ services:
     class: Drupal\penn_global_metatags\EmbeddedVideoResolver
     arguments: ['@entity_type.manager', '@config.factory', '@penn_global_metatags.vimeo_metadata', '@file_url_generator']
 
+  penn_global_metatags.default_tags:
+    class: Drupal\penn_global_metatags\DefaultTags
+    arguments: ['@entity_type.manager']
+
   logger.channel.penn_global_metatags:
     parent: logger.channel_base
     arguments: ['penn_global_metatags']

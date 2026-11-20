@@ -1,0 +1,24 @@
+# Config schema for this module's metatag tags, so metatag defaults that use
+# them validate. Matches schema_metatag's own convention: 'text' for values
+# that may be long or serialized.
+metatag.metatag_tag.schema_web_page_name:
+  type: text
+  label: 'name'
+metatag.metatag_tag.schema_web_page_url:
+  type: text
+  label: 'url'
+metatag.metatag_tag.schema_web_page_is_part_of:
+  type: text
+  label: 'isPartOf'
+metatag.metatag_tag.schema_web_page_main_entity:
+  type: text
+  label: 'mainEntity'
+metatag.metatag_tag.schema_web_page_date_created:
+  type: text
+  label: 'dateCreated'
+metatag.metatag_tag.schema_web_page_date_modified:
+  type: text
+  label: 'dateModified'
+metatag.metatag_tag.schema_web_page_breadcrumb_trail:
+  type: text
+  label: 'breadcrumb (token)'

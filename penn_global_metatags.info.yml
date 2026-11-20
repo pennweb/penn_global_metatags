@@ -10,3 +10,5 @@ dependencies:
   - schema_metatag:schema_metatag
   - schema_metatag:schema_web_page
   - schema_metatag:schema_video_object
+  - schema_metatag:schema_organization
+  - schema_metatag:schema_web_site

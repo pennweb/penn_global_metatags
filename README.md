@@ -39,9 +39,30 @@ in `drupal/schema_metatag`.
 
 ## Setup
 
-1. Enable the module (this also enables `schema_web_page` and
-   `schema_video_object`).
-2. Map your video components in `penn_global_metatags.settings`
+1. Enable the module (this also enables the `schema_web_page`,
+   `schema_web_site`, `schema_organization` and `schema_video_object`
+   submodules).
+
+   On install it adds its tags to the site's metatag defaults:
+
+   | Defaults | Tags added |
+   |---|---|
+   | Front page | `EducationalOrganization` and `WebSite` |
+   | Content | `WebPage` (name, url, description, isPartOf), breadcrumb, `VideoObject` |
+   | Taxonomy term | `CollectionPage`, breadcrumb |
+
+   Only tags a site hasn't set are added; existing values are never
+   overwritten. Nothing is added during a config import, since the imported
+   config decides. On a site where the module is already installed, run
+   `drush pgm-defaults` to add anything missing, then `drush cex`. The full
+   list is in `src/DefaultTags.php`.
+
+   Uninstalling removes the module's own tags, plus any standard tag still set
+   to the value the module added. Values you changed are kept.
+2. Review the tags under Configuration > Search and metadata > Metatag. For
+   example, the flagship site might use `CollegeOrUniversity` instead of
+   `EducationalOrganization`, and add a logo.
+3. Map your video components in `penn_global_metatags.settings`
    (`config/install` ships the Penn upstream's `penn_entity` mappings; replace
    them with your own components):
 
@@ -55,30 +76,11 @@ in `drupal/schema_metatag`.
    | `vimeo_referrer` | Production URL, for domain-restricted Vimeo videos |
 
    Leave decorative clips (autoplaying background loops) out of
-   `video_sources`.
-3. Add the tags to your metatag defaults, e.g. on Content:
+   `video_sources`. Every video token is empty on pages without a video, so no
+   partial `VideoObject` is rendered.
 
-   ```yaml
-   schema_web_page_type: WebPage
-   schema_web_page_id: '[current-page:url]#webpage'
-   schema_web_page_name: '[node:title]'
-   schema_web_page_url: '[node:url]'
-   schema_web_page_is_part_of: '[site:url]#website'
-   schema_web_page_breadcrumb_trail: '[current-page:schema-breadcrumb]'
-   schema_video_object_type: '[node:schema-video-type]'
-   schema_video_object_id: '[node:schema-video-id]'
-   schema_video_object_name: '[node:schema-video-name]'
-   schema_video_object_description: '[node:schema-video-description]'
-   schema_video_object_thumbnail_url: '[node:schema-video-thumbnail-url]'
-   schema_video_object_upload_date: '[node:schema-video-upload-date]'
-   schema_video_object_content_url: '[node:schema-video-content-url]'
-   schema_video_object_embed_url: '[node:schema-video-embed-url]'
-   schema_video_object_duration: '[node:schema-video-duration]'
-   ```
-
-   Every video token is empty on pages without a video, so no partial
-   `VideoObject` is rendered. Don't also enable schema_web_page's own
-   `breadcrumb` tag; both write the same property.
+Don't also enable schema_web_page's own `breadcrumb` tag; it writes the same
+property as this module's breadcrumb.
 
 ## Notes
 
