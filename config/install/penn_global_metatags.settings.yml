@@ -1,0 +1,30 @@
+# Node text fields scanned for embedded video components (<drupal-entity>).
+scan_fields:
+  - body
+# Embedded entities that count as a video. The first match on a page becomes
+# its VideoObject. url_type 'file' = a direct video file (contentUrl);
+# 'vimeo' = a Vimeo ID or URL (embedUrl, plus duration and upload date from
+# Vimeo). poster_field is an optional media image reference for the thumbnail.
+# Looping background clips are deliberately not listed: they are decoration,
+# not content a searcher would want to watch.
+video_sources:
+  - entity_type: penn_entity
+    bundle: video_modal
+    url_field: field_video_source
+    url_type: file
+    poster_field: field_image
+  - entity_type: penn_entity
+    bundle: video_inline_poster_controls
+    url_field: field_video_source
+    url_type: file
+    poster_field: field_image
+  - entity_type: penn_entity
+    bundle: video_vimeo
+    url_field: field_video_source_url
+    url_type: vimeo
+    poster_field: ''
+# Referer sent to Vimeo's oEmbed API. Domain-restricted videos only return
+# metadata to a whitelisted domain, so set this to the production URL. Empty
+# means the current site's base URL.
+vimeo_referrer: ''
+vimeo_timeout: 3

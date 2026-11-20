@@ -1,0 +1,12 @@
+name: 'Penn Global Metatags'
+type: module
+description: 'Schema.org structured data for Penn sites: WebPage details, breadcrumbs that include the current page, and VideoObject markup for embedded video components.'
+core_version_requirement: ^10.3 || ^11
+package: Penn
+dependencies:
+  - drupal:node
+  - token:token
+  - metatag:metatag
+  - schema_metatag:schema_metatag
+  - schema_metatag:schema_web_page
+  - schema_metatag:schema_video_object

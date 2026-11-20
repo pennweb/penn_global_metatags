@@ -1,0 +1,17 @@
+{
+    "name": "pennweb/penn_global_metatags",
+    "description": "Schema.org structured data for Penn Drupal sites: breadcrumbs that include the current page, WebPage details, and VideoObject markup for embedded video components.",
+    "type": "drupal-module",
+    "license": "GPL-2.0-or-later",
+    "homepage": "https://github.com/pennweb/penn_global_metatags",
+    "support": {
+        "issues": "https://github.com/pennweb/penn_global_metatags/issues",
+        "source": "https://github.com/pennweb/penn_global_metatags"
+    },
+    "require": {
+        "drupal/core": "^10.3 || ^11",
+        "drupal/metatag": "^2.0",
+        "drupal/schema_metatag": "^3.1",
+        "drupal/token": "^1.13"
+    }
+}

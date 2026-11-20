@@ -1,0 +1,16 @@
+services:
+  penn_global_metatags.breadcrumb_trail:
+    class: Drupal\penn_global_metatags\BreadcrumbTrail
+    arguments: ['@breadcrumb', '@title_resolver', '@request_stack', '@renderer']
+
+  penn_global_metatags.vimeo_metadata:
+    class: Drupal\penn_global_metatags\VimeoMetadata
+    arguments: ['@http_client', '@config.factory', '@cache.default', '@request_stack', '@logger.channel.penn_global_metatags']
+
+  penn_global_metatags.embedded_video:
+    class: Drupal\penn_global_metatags\EmbeddedVideoResolver
+    arguments: ['@entity_type.manager', '@config.factory', '@penn_global_metatags.vimeo_metadata', '@file_url_generator']
+
+  logger.channel.penn_global_metatags:
+    parent: logger.channel_base
+    arguments: ['penn_global_metatags']

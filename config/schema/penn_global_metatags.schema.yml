@@ -1,0 +1,38 @@
+penn_global_metatags.settings:
+  type: config_object
+  label: 'Penn Global Metatags settings'
+  mapping:
+    scan_fields:
+      type: sequence
+      label: 'Node text fields scanned for embedded video'
+      sequence:
+        type: string
+        label: 'Field machine name'
+    video_sources:
+      type: sequence
+      label: 'Embedded entities treated as video'
+      sequence:
+        type: mapping
+        label: 'Video source'
+        mapping:
+          entity_type:
+            type: string
+            label: 'Entity type'
+          bundle:
+            type: string
+            label: 'Bundle'
+          url_field:
+            type: string
+            label: 'Field holding the video URL'
+          url_type:
+            type: string
+            label: 'URL type (file or vimeo)'
+          poster_field:
+            type: string
+            label: 'Media image field used as the thumbnail'
+    vimeo_referrer:
+      type: string
+      label: 'Referer sent to the Vimeo oEmbed API'
+    vimeo_timeout:
+      type: integer
+      label: 'Vimeo oEmbed request timeout in seconds'
