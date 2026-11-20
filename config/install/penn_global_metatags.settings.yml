@@ -1,0 +1,6 @@
+# Image used for social sharing (Open Graph and Twitter cards) when a page has
+# no image of its own. An absolute URL, a site path such as
+# /themes/custom/mytheme/share.jpg, or a stream URI such as
+# public://share.jpg. Empty means pages without an image share none.
+default_image: ''
+default_image_alt: ''

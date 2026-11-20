@@ -1,13 +1,16 @@
 name: 'Penn Global Metatags'
 type: module
-description: 'Schema.org structured data for Penn sites: Organization and WebSite on the front page, WebPage details, and breadcrumbs that include the current page.'
+description: 'Structured data and social sharing defaults for Penn sites: Organization and WebSite, WebPage details, breadcrumbs that include the current page, and Open Graph/Twitter card tags.'
 core_version_requirement: ^10.3 || ^11
 package: Penn
 dependencies:
   - drupal:node
   - token:token
   - metatag:metatag
+  - metatag:metatag_open_graph
+  - metatag:metatag_twitter_cards
   - schema_metatag:schema_metatag
   - schema_metatag:schema_web_page
   - schema_metatag:schema_organization
   - schema_metatag:schema_web_site
+configure: penn_global_metatags.settings

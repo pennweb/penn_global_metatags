@@ -17,9 +17,23 @@ class DefaultTags {
   /**
    * Tags this module adds, keyed by metatag defaults ID.
    *
-   * Values use [site:*] tokens so each site describes itself.
+   * Values use [site:*] tokens so each site describes itself. The share image
+   * comes from the module's settings, never a built-in file.
    */
   public const DEFAULTS = [
+    // Social sharing for every page; content and term defaults refine it.
+    'global' => [
+      'og_site_name' => '[site:name]',
+      'og_type' => 'website',
+      'og_url' => '[current-page:url]',
+      'og_title' => '[current-page:title]',
+      'og_image' => '[site:social-image]',
+      'og_image_alt' => '[site:social-image-alt]',
+      'twitter_cards_type' => 'summary_large_image',
+      'twitter_cards_title' => '[current-page:title]',
+      'twitter_cards_image' => '[site:social-image]',
+      'twitter_cards_image_alt' => '[site:social-image-alt]',
+    ],
     'front' => [
       'schema_organization_type' => 'EducationalOrganization',
       'schema_organization_id' => '[site:url]#organization',
@@ -38,6 +52,15 @@ class DefaultTags {
       'schema_web_page_description' => '[node:summary]',
       'schema_web_page_is_part_of' => '[site:url]#website',
       'schema_web_page_breadcrumb_trail' => '[current-page:schema-breadcrumb]',
+      'og_title' => '[node:title]',
+      'og_description' => '[node:summary]',
+      'og_url' => '[node:url]',
+      'og_image' => '[node:social-image]',
+      'og_image_alt' => '[node:social-image-alt]',
+      'twitter_cards_title' => '[node:title]',
+      'twitter_cards_description' => '[node:summary]',
+      'twitter_cards_image' => '[node:social-image]',
+      'twitter_cards_image_alt' => '[node:social-image-alt]',
     ],
     'taxonomy_term' => [
       'schema_web_page_type' => 'CollectionPage',
@@ -47,6 +70,11 @@ class DefaultTags {
       'schema_web_page_description' => '[term:description]',
       'schema_web_page_is_part_of' => '[site:url]#website',
       'schema_web_page_breadcrumb_trail' => '[current-page:schema-breadcrumb]',
+      'og_title' => '[term:name]',
+      'og_description' => '[term:description]',
+      'og_url' => '[term:url]',
+      'twitter_cards_title' => '[term:name]',
+      'twitter_cards_description' => '[term:description]',
     ],
   ];
 

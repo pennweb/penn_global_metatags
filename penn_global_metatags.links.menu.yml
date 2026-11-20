@@ -1,0 +1,5 @@
+penn_global_metatags.settings:
+  title: 'Penn Global Metatags'
+  description: 'Default image for social sharing.'
+  route_name: penn_global_metatags.settings
+  parent: system.admin_config_search

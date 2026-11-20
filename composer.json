@@ -1,6 +1,6 @@
 {
     "name": "pennweb/penn_global_metatags",
-    "description": "Schema.org structured data for Penn Drupal sites: Organization and WebSite on the front page, WebPage details, and breadcrumbs that include the current page.",
+    "description": "Structured data and social sharing defaults for Penn Drupal sites: Organization and WebSite, WebPage details, breadcrumbs that include the current page, and Open Graph/Twitter card tags.",
     "type": "drupal-module",
     "license": "GPL-2.0-or-later",
     "homepage": "https://github.com/pennweb/penn_global_metatags",

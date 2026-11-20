@@ -1,0 +1,7 @@
+penn_global_metatags.settings:
+  path: '/admin/config/search/penn-global-metatags'
+  defaults:
+    _form: '\Drupal\penn_global_metatags\Form\SettingsForm'
+    _title: 'Penn Global Metatags'
+  requirements:
+    _permission: 'administer meta tags'
