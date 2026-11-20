@@ -1,6 +1,6 @@
 {
     "name": "pennweb/penn_global_metatags",
-    "description": "Schema.org structured data for Penn Drupal sites: breadcrumbs that include the current page, WebPage details, and VideoObject markup for embedded video components.",
+    "description": "Schema.org structured data for Penn Drupal sites: Organization and WebSite on the front page, WebPage details, and breadcrumbs that include the current page.",
     "type": "drupal-module",
     "license": "GPL-2.0-or-later",
     "homepage": "https://github.com/pennweb/penn_global_metatags",

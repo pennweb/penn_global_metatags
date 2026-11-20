@@ -6,37 +6,19 @@
  */
 
 use Drupal\Core\Render\BubbleableMetadata;
-use Drupal\penn_global_metatags\EmbeddedVideoResolver;
 
 /**
  * Implements hook_token_info().
  */
 function penn_global_metatags_token_info() {
-  $current_page['schema-breadcrumb'] = [
-    'name' => t('Schema.org BreadcrumbList'),
-    'description' => t("Drupal's breadcrumb plus the current page, serialized for schema_metatag. Empty when under two items."),
-  ];
-
-  $labels = [
-    'type' => t('VideoObject type (empty when the page has no video)'),
-    'id' => t('VideoObject @id'),
-    'name' => t('VideoObject name'),
-    'description' => t('VideoObject description'),
-    'thumbnail-url' => t('VideoObject thumbnail URL'),
-    'upload-date' => t('VideoObject upload date (ISO 8601)'),
-    'content-url' => t('VideoObject content URL (video files)'),
-    'embed-url' => t('VideoObject embed URL (Vimeo)'),
-    'duration' => t('VideoObject duration in seconds'),
-  ];
-  $node = [];
-  foreach ($labels as $key => $label) {
-    $node['schema-video-' . $key] = ['name' => t('Schema.org: @label', ['@label' => $label])];
-  }
-
   return [
     'tokens' => [
-      'current-page' => $current_page,
-      'node' => $node,
+      'current-page' => [
+        'schema-breadcrumb' => [
+          'name' => t('Schema.org BreadcrumbList'),
+          'description' => t("Drupal's breadcrumb plus the current page, serialized for schema_metatag. Empty when under two items."),
+        ],
+      ],
     ],
   ];
 }
@@ -50,24 +32,6 @@ function penn_global_metatags_tokens($type, $tokens, array $data, array $options
   if ($type === 'current-page' && isset($tokens['schema-breadcrumb'])) {
     $replacements[$tokens['schema-breadcrumb']] = \Drupal::service('penn_global_metatags.breadcrumb_trail')
       ->build(\Drupal::routeMatch(), $bubbleable_metadata);
-  }
-
-  if ($type === 'node' && !empty($data['node'])) {
-    $names = array_filter(
-      array_keys($tokens),
-      static fn(string $name): bool => in_array(substr($name, strlen('schema-video-')), EmbeddedVideoResolver::TOKENS, TRUE)
-        && str_starts_with($name, 'schema-video-'),
-    );
-    if ($names) {
-      $values = \Drupal::service('penn_global_metatags.embedded_video')
-        ->resolveTokens($names, $data['node'], $bubbleable_metadata);
-      foreach ($names as $name) {
-        // Unmatched names stay out so metatag clears them to empty.
-        if (isset($values[$name])) {
-          $replacements[$tokens[$name]] = $values[$name];
-        }
-      }
-    }
   }
 
   return $replacements;
