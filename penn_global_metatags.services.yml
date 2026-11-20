@@ -6,7 +6,3 @@ services:
   penn_global_metatags.default_tags:
     class: Drupal\penn_global_metatags\DefaultTags
     arguments: ['@entity_type.manager']
-
-  penn_global_metatags.social_image:
-    class: Drupal\penn_global_metatags\SocialImage
-    arguments: ['@config.factory', '@file_url_generator', '@request_stack']

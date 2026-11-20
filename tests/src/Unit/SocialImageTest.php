@@ -2,21 +2,12 @@
 
 namespace Drupal\Tests\penn_global_metatags\Unit;
 
-use Drupal\Core\Cache\Cache;
-use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Cache\Context\CacheContextsManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
-use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\Core\Field\FieldDefinitionInterface;
-use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Render\BubbleableMetadata;
-use Drupal\file\FileInterface;
-use Drupal\node\NodeInterface;
-use Drupal\penn_global_metatags\SocialImage;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -24,28 +15,17 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Tests picking the social sharing image.
+ * Tests the [site:social-image] tokens.
  */
 #[Group('penn_global_metatags')]
 class SocialImageTest extends UnitTestCase {
-
-  /**
-   * The configured default image.
-   */
-  protected string $defaultImage = '';
 
   /**
    * {@inheritdoc}
    */
   protected function setUp(): void {
     parent::setUp();
-
-    // Cache::mergeContexts() asserts context tokens through the container.
-    $contexts = $this->createMock(CacheContextsManager::class);
-    $contexts->method('assertValidTokens')->willReturn(TRUE);
-    $container = new ContainerBuilder();
-    $container->set('cache_contexts_manager', $contexts);
-    \Drupal::setContainer($container);
+    require_once __DIR__ . '/../../../penn_global_metatags.module';
   }
 
   /**
@@ -61,151 +41,67 @@ class SocialImageTest extends UnitTestCase {
   }
 
   /**
-   * Tests resolving the configured default image to an absolute URL.
+   * Tests resolving the configured image to an absolute URL, with its alt.
    */
   #[DataProvider('imageValues')]
   public function testSiteImageResolvesToAbsoluteUrl(string $value, string $expected): void {
-    $this->defaultImage = $value;
+    $this->setUpContainer($value);
 
-    $image = $this->createService()->getSiteImage(new BubbleableMetadata());
+    $replacements = penn_global_metatags_tokens('site', [
+      'social-image' => '[site:social-image]',
+      'social-image-alt' => '[site:social-image-alt]',
+    ], [], [], new BubbleableMetadata());
 
-    $this->assertSame($expected, $image['url']);
-    $this->assertSame($expected === '' ? '' : 'Campus at dusk', $image['alt']);
+    $this->assertSame($expected, $replacements['[site:social-image]']);
+    // No image means no alt text either.
+    $this->assertSame($expected === '' ? '' : 'Campus at dusk', $replacements['[site:social-image-alt]']);
   }
 
   /**
-   * Tests that a node's own image field wins over the site default.
+   * Tests that nodes get no image token of their own.
    */
-  public function testNodeUsesItsImageField(): void {
-    $this->defaultImage = '/default.jpg';
-    $node = $this->createNode([
-      'title' => ['string', TRUE, NULL],
-      'field_tags' => ['entity_reference', FALSE, $this->createField(['entity' => NULL]), 'taxonomy_term'],
-      'field_image' => ['image', FALSE, $this->createField(['entity' => $this->createFile('public://story.jpg'), 'alt' => 'A lab'])],
-    ]);
+  public function testNoNodeImageToken(): void {
+    $this->setUpContainer('/share.jpg');
 
-    $image = $this->createService()->getNodeImage($node, new BubbleableMetadata());
+    $replacements = penn_global_metatags_tokens('node', ['social-image' => '[node:social-image]'], [], [], new BubbleableMetadata());
 
-    $this->assertSame(['url' => 'https://www.example.edu/sites/default/files/story.jpg', 'alt' => 'A lab'], $image);
+    $this->assertSame([], $replacements);
+    $this->assertArrayNotHasKey('node', penn_global_metatags_token_info()['tokens']);
   }
 
   /**
-   * Tests that a media reference uses the media item's thumbnail.
+   * Registers the services the token hook uses.
    */
-  public function testNodeUsesMediaThumbnail(): void {
-    $media = $this->createMock(FieldableEntityInterface::class);
-    $this->configureCacheability($media);
-    $thumbnail = $this->createField(['entity' => $this->createFile('public://media/hero.jpg'), 'alt' => 'Hero']);
-    $media->method('hasField')->willReturn(TRUE);
-    $media->method('get')->willReturn($thumbnail);
-
-    $node = $this->createNode([
-      'field_hero' => ['entity_reference', FALSE, $this->createField(['entity' => $media]), 'media'],
-    ]);
-
-    $image = $this->createService()->getNodeImage($node, new BubbleableMetadata());
-
-    $this->assertSame('https://www.example.edu/sites/default/files/media/hero.jpg', $image['url']);
-    $this->assertSame('Hero', $image['alt']);
-  }
-
-  /**
-   * Tests that a node without images falls back to the site default.
-   */
-  public function testNodeFallsBackToSiteImage(): void {
-    $this->defaultImage = '/default.jpg';
-
-    $image = $this->createService()->getNodeImage($this->createNode([]), new BubbleableMetadata());
-
-    $this->assertSame('https://www.example.edu/default.jpg', $image['url']);
-  }
-
-  /**
-   * Creates the service with mocked collaborators.
-   */
-  protected function createService(): SocialImage {
+  protected function setUpContainer(string $default_image): void {
     $settings = $this->createMock(ImmutableConfig::class);
-    $this->configureCacheability($settings);
-    $settings->method('get')->willReturnCallback(fn(string $key): string => match ($key) {
-      'default_image' => $this->defaultImage,
-      'default_image_alt' => 'Campus at dusk',
-      default => '',
-    });
-    $config_factory = $this->createMock(ConfigFactoryInterface::class);
-    $config_factory->method('get')->willReturn($settings);
+    $settings->method('get')->willReturnMap([
+      ['default_image', $default_image],
+      ['default_image_alt', 'Campus at dusk'],
+    ]);
+    $settings->method('getCacheContexts')->willReturn([]);
+    $settings->method('getCacheTags')->willReturn(['config:penn_global_metatags.settings']);
+    $settings->method('getCacheMaxAge')->willReturn(-1);
 
-    $file_urls = $this->createMock(FileUrlGeneratorInterface::class);
-    $file_urls->method('generateAbsoluteString')
+    $config_factory = $this->createMock(ConfigFactoryInterface::class);
+    $config_factory->method('get')->with('penn_global_metatags.settings')->willReturn($settings);
+
+    $file_url_generator = $this->createMock(FileUrlGeneratorInterface::class);
+    $file_url_generator->method('generateAbsoluteString')
       ->willReturnCallback(static fn(string $uri): string => 'https://www.example.edu/sites/default/files/' . substr($uri, strlen('public://')));
 
-    $requests = new RequestStack();
-    $requests->push(Request::create('https://www.example.edu/about'));
+    $request_stack = new RequestStack();
+    $request_stack->push(Request::create('https://www.example.edu/node/1'));
 
-    return new SocialImage($config_factory, $file_urls, $requests);
-  }
+    // Cache::mergeContexts() asserts context tokens through the container.
+    $contexts = $this->createMock(CacheContextsManager::class);
+    $contexts->method('assertValidTokens')->willReturn(TRUE);
 
-  /**
-   * Creates a node with the given fields.
-   *
-   * @param array<string, array> $fields
-   *   Keyed by field name: [type, is base field, field list, target type].
-   */
-  protected function createNode(array $fields): NodeInterface {
-    $definitions = [];
-    $lists = [];
-    foreach ($fields as $name => $spec) {
-      [$type, $is_base, $list] = $spec;
-      $target_type = $spec[3] ?? NULL;
-
-      $storage = $this->createMock(FieldStorageDefinitionInterface::class);
-      $storage->method('isBaseField')->willReturn($is_base);
-      $definition = $this->createMock(FieldDefinitionInterface::class);
-      $definition->method('getFieldStorageDefinition')->willReturn($storage);
-      $definition->method('getType')->willReturn($type);
-      $definition->method('getSetting')->willReturnCallback(static fn(string $key) => $key === 'target_type' ? $target_type : NULL);
-
-      $definitions[$name] = $definition;
-      $lists[$name] = $list ?? $this->createField([]);
-    }
-
-    $node = $this->createMock(NodeInterface::class);
-    $this->configureCacheability($node);
-    $node->method('getFieldDefinitions')->willReturn($definitions);
-    $node->method('get')->willReturnCallback(static fn(string $name): FieldItemListInterface => $lists[$name]);
-
-    return $node;
-  }
-
-  /**
-   * Creates a populated field mock with magic property access.
-   */
-  protected function createField(array $properties): FieldItemListInterface {
-    $field = $this->createMock(FieldItemListInterface::class);
-    $field->method('isEmpty')->willReturn(empty($properties['entity']));
-    $field->method('__get')->willReturnCallback(static fn(string $name): mixed => $properties[$name] ?? NULL);
-    $field->method('__isset')->willReturnCallback(static fn(string $name): bool => isset($properties[$name]));
-
-    return $field;
-  }
-
-  /**
-   * Creates a file mock with the given URI.
-   */
-  protected function createFile(string $uri): FileInterface {
-    $file = $this->createMock(FileInterface::class);
-    $this->configureCacheability($file);
-    $file->method('getFileUri')->willReturn($uri);
-
-    return $file;
-  }
-
-  /**
-   * Gives a mock empty, permanent cacheability.
-   */
-  protected function configureCacheability(CacheableDependencyInterface $object): void {
-    $object->method('getCacheContexts')->willReturn([]);
-    $object->method('getCacheTags')->willReturn([]);
-    $object->method('getCacheMaxAge')->willReturn(Cache::PERMANENT);
+    $container = new ContainerBuilder();
+    $container->set('config.factory', $config_factory);
+    $container->set('file_url_generator', $file_url_generator);
+    $container->set('request_stack', $request_stack);
+    $container->set('cache_contexts_manager', $contexts);
+    \Drupal::setContainer($container);
   }
 
 }

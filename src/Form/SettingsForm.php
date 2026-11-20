@@ -35,7 +35,7 @@ class SettingsForm extends ConfigFormBase {
       '#title' => $this->t('Default sharing image'),
       '#default_value' => $config->get('default_image'),
       '#maxlength' => 2048,
-      '#description' => $this->t('Shown when a page is shared on social media and has no image of its own. An absolute URL, a site path such as <code>/themes/custom/mytheme/share.jpg</code>, or <code>public://share.jpg</code>. Use a JPG or PNG at least 1200 × 630 pixels; social sites do not show SVG. Leave empty to share no image.'),
+      '#description' => $this->t('Shown when any page is shared on social media. An absolute URL, a site path such as <code>/themes/custom/mytheme/share.jpg</code>, or <code>public://share.jpg</code>. Use a JPG or PNG at least 1200 × 630 pixels; social sites do not show SVG. Leave empty to share no image.'),
     ];
 
     $form['default_image_alt'] = [

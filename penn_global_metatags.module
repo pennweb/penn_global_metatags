@@ -28,15 +28,6 @@ function penn_global_metatags_token_info() {
           'name' => t('Default social sharing image alt text'),
         ],
       ],
-      'node' => [
-        'social-image' => [
-          'name' => t('Social sharing image'),
-          'description' => t("The node's first image or media field, or the site's default sharing image."),
-        ],
-        'social-image-alt' => [
-          'name' => t('Social sharing image alt text'),
-        ],
-      ],
     ],
   ];
 }
@@ -52,21 +43,43 @@ function penn_global_metatags_tokens($type, $tokens, array $data, array $options
       ->build(\Drupal::routeMatch(), $bubbleable_metadata);
   }
 
-  $wants_image = isset($tokens['social-image']) || isset($tokens['social-image-alt']);
-  if ($wants_image && ($type === 'site' || ($type === 'node' && !empty($data['node'])))) {
-    /** @var \Drupal\penn_global_metatags\SocialImage $social_image */
-    $social_image = \Drupal::service('penn_global_metatags.social_image');
-    $image = $type === 'node'
-      ? $social_image->getNodeImage($data['node'], $bubbleable_metadata)
-      : $social_image->getSiteImage($bubbleable_metadata);
+  if ($type === 'site' && (isset($tokens['social-image']) || isset($tokens['social-image-alt']))) {
+    $settings = \Drupal::config('penn_global_metatags.settings');
+    $bubbleable_metadata->addCacheableDependency($settings);
+    $url = penn_global_metatags_absolute_url(trim((string) $settings->get('default_image')));
 
     if (isset($tokens['social-image'])) {
-      $replacements[$tokens['social-image']] = $image['url'];
+      $replacements[$tokens['social-image']] = $url;
     }
     if (isset($tokens['social-image-alt'])) {
-      $replacements[$tokens['social-image-alt']] = $image['alt'];
+      $replacements[$tokens['social-image-alt']] = $url !== '' ? trim((string) $settings->get('default_image_alt')) : '';
     }
   }
 
   return $replacements;
+}
+
+/**
+ * Resolves an absolute URL, site path or stream URI to an absolute URL.
+ *
+ * Social sites need an absolute image URL, but the share image setting can
+ * hold any of the three.
+ */
+function penn_global_metatags_absolute_url(string $value): string {
+  if ($value === '') {
+    return '';
+  }
+  if (preg_match('#^https?://#i', $value)) {
+    return $value;
+  }
+  if (preg_match('#^[a-z][a-z0-9+.-]*://#i', $value)) {
+    return \Drupal::service('file_url_generator')->generateAbsoluteString($value);
+  }
+
+  $request = \Drupal::requestStack()->getCurrentRequest();
+  if (!$request) {
+    return '';
+  }
+
+  return $request->getSchemeAndHttpHost() . $request->getBasePath() . '/' . ltrim($value, '/');
 }
