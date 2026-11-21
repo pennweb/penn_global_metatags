@@ -8,6 +8,7 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Extension\ModuleHandler;
 use Drupal\Core\File\FileUrlGeneratorInterface;
+use Drupal\Core\StreamWrapper\StreamWrapperManagerInterface;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\node\NodeInterface;
 use Drupal\Tests\UnitTestCase;
@@ -46,6 +47,9 @@ class SocialImageTest extends UnitTestCase {
       'site path' => ['/themes/custom/mytheme/share.jpg', 'https://www.example.edu/themes/custom/mytheme/share.jpg'],
       'stream uri' => ['public://share.jpg', 'https://www.example.edu/sites/default/files/share.jpg'],
       'empty' => ['', ''],
+      'private file' => ['private://share.jpg', ''],
+      'temporary file' => ['temporary://share.jpg', ''],
+      'unregistered scheme' => ['pubic://share.jpg', ''],
     ];
   }
 
@@ -95,6 +99,21 @@ class SocialImageTest extends UnitTestCase {
     $this->assertSame($node, $seen);
     $this->assertSame('https://www.example.edu/sites/default/files/story.jpg', $replacements['[node:social-image]']);
     $this->assertSame('Students on Locust Walk', $replacements['[node:social-image-alt]']);
+  }
+
+  /**
+   * Tests that a private file chosen by the alter hook is not shared.
+   */
+  public function testAlterCannotSharePrivateFile(): void {
+    $this->setUpContainer('/share.jpg');
+    $this->alter = static function (array &$image): void {
+      $image = ['url' => 'private://draft.jpg', 'alt' => 'Draft'];
+    };
+
+    $replacements = $this->nodeTokens($this->createMock(NodeInterface::class));
+
+    $this->assertSame('', $replacements['[node:social-image]']);
+    $this->assertSame('', $replacements['[node:social-image-alt]']);
   }
 
   /**
@@ -156,6 +175,9 @@ class SocialImageTest extends UnitTestCase {
     $container->set('request_stack', $request_stack);
     $container->set('cache_contexts_manager', $contexts);
     $container->set('module_handler', $this->createModuleHandler());
+    $stream_wrappers = $this->createMock(StreamWrapperManagerInterface::class);
+    $stream_wrappers->method('isValidScheme')->willReturnCallback(static fn(string $scheme): bool => in_array($scheme, ['public', 'private', 'temporary'], TRUE));
+    $container->set('stream_wrapper_manager', $stream_wrappers);
     \Drupal::setContainer($container);
   }
 

@@ -107,6 +107,25 @@ schema_web_page_date_modified: '[node:changed:custom:c]'
 - Validate with Google's Rich Results Test or https://validator.schema.org.
 - Tests: `phpunit -c web/core web/modules/contrib/penn_global_metatags`
 
+## Security
+
+Reviewed November 21, 2026 (release 1.0.1), together with Metatag 2.2.3,
+Schema.org Metatag 3.1.0, Token 1.17.0 and Drupal 11.4.
+
+| Area | How it's handled |
+|---|---|
+| Tag output | Metatag HTML-escapes every value it prints. JSON-LD is encoded by Schema.org Metatag with `JSON_HEX_TAG`, so a title containing `</script>` can't end the script block. Breadcrumb names are reduced to plain text first. |
+| Serialized breadcrumb | `[current-page:schema-breadcrumb]` is a serialized array of strings and integers, as Schema.org Metatag expects. It unserializes with `allowed_classes => FALSE`, so it can't create PHP objects. |
+| Settings form | Needs the `administer meta tags` permission, which is restricted. Form API provides the CSRF token. |
+| Share image | Accepts `http(s)://` URLs, site paths and public stream wrappers only. `private://`, `temporary://` and unregistered schemes are refused by the form and ignored at runtime, including when a hook supplies them, so a non-public file's URL never reaches a page's tags and a mistyped scheme can't break page rendering. |
+| `hook_penn_global_metatags_social_image_alter()` | Implementations choose what to share, so they must check that the current user can view any entity they take an image from (see `penn_global_metatags.api.php`). |
+| Absolute URLs | The breadcrumb's current-page URL and site-path images use the request's host. Set `trusted_host_patterns` on any host that doesn't already limit which domains reach Drupal (Pantheon does). |
+| Caching | Results carry the cacheability of the config and entities they come from, and breadcrumbs vary by `url.path`, so one page's tags aren't served on another. |
+| Other | No database queries, no anonymous input, no JavaScript. The Drush command is CLI-only. |
+
+To report a security problem, use **Report a vulnerability** on the
+repository's Security tab rather than a public issue.
+
 ## License
 
 GPL-2.0-or-later, like Drupal itself. See `LICENSE.txt`.

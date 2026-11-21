@@ -60,6 +60,11 @@ class SettingsForm extends ConfigFormBase {
     if ($image !== '' && !preg_match('#^(https?://|[a-z][a-z0-9+.-]*://|/)#i', $image)) {
       $form_state->setErrorByName('default_image', $this->t('Enter an absolute URL, a path starting with /, or a URI such as public://share.jpg.'));
     }
+    elseif (preg_match('#^([a-z][a-z0-9+.-]*)://#i', $image, $matches) && !in_array(strtolower($matches[1]), ['http', 'https'], TRUE)) {
+      if (!penn_global_metatags_is_shareable_scheme($matches[1])) {
+        $form_state->setErrorByName('default_image', $this->t('%scheme:// files cannot be shared: social sites can only load public files. Use public:// or a site path.', ['%scheme' => $matches[1]]));
+      }
+    }
 
     parent::validateForm($form, $form_state);
   }

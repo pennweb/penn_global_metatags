@@ -112,8 +112,10 @@ function penn_global_metatags_absolute_url(string $value): string {
   if (preg_match('#^https?://#i', $value)) {
     return $value;
   }
-  if (preg_match('#^[a-z][a-z0-9+.-]*://#i', $value)) {
-    return \Drupal::service('file_url_generator')->generateAbsoluteString($value);
+  if (preg_match('#^([a-z][a-z0-9+.-]*)://#i', $value, $matches)) {
+    return penn_global_metatags_is_shareable_scheme($matches[1])
+      ? \Drupal::service('file_url_generator')->generateAbsoluteString($value)
+      : '';
   }
 
   $request = \Drupal::requestStack()->getCurrentRequest();
@@ -122,4 +124,21 @@ function penn_global_metatags_absolute_url(string $value): string {
   }
 
   return $request->getSchemeAndHttpHost() . $request->getBasePath() . '/' . ltrim($value, '/');
+}
+
+/**
+ * Whether files under a stream wrapper scheme can be shared publicly.
+ *
+ * Social sites fetch the image anonymously, so private and temporary files
+ * are never usable, and putting their URLs in a page's tags reveals file
+ * names that aren't otherwise public. An unregistered scheme (a typo such as
+ * pubic://) would make the file URL generator throw on every page.
+ */
+function penn_global_metatags_is_shareable_scheme(string $scheme): bool {
+  $scheme = strtolower($scheme);
+  if (in_array($scheme, ['private', 'temporary'], TRUE)) {
+    return FALSE;
+  }
+
+  return \Drupal::service('stream_wrapper_manager')->isValidScheme($scheme);
 }
