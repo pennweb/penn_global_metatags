@@ -10,7 +10,7 @@ on any site, and fills the gaps those modules leave:
 | Breadcrumbs leave out the current page, so top-level pages get a one-item list that Google ignores | `[current-page:schema-breadcrumb]`: Drupal's breadcrumb plus the current page, omitted when under two items (e.g. the front page) |
 | WebPage has no `name`, `url`, `isPartOf`, `mainEntity` or dates | Tag plugins for each, with `isPartOf`/`mainEntity` emitted as `{"@id": ...}` references |
 | Every site has to wire up Organization, WebSite, WebPage and social tags by hand | Defaults added to the site's metatag config on install |
-| Share images are either missing or hard-coded per site | `[site:social-image]`: one default image each site sets, used on every page |
+| Share images are either missing or hard-coded per site | One default image each site sets; other modules can pick a per-page image |
 
 Nothing is tied to one domain: everything uses `[site:url]` and `[site:name]`,
 so each site describes itself.
@@ -45,7 +45,7 @@ in `drupal/schema_metatag`.
 |---|---|---|
 | Global | | Site name, type, URL, title, default share image, `summary_large_image` card |
 | Front page | `EducationalOrganization` and `WebSite` | (inherits global) |
-| Content | `WebPage` (name, url, description, isPartOf) and breadcrumb | Title, summary, URL (image inherited from global) |
+| Content | `WebPage` (name, url, description, isPartOf) and breadcrumb | Title, summary, URL, `[node:social-image]` |
 | Taxonomy term | `CollectionPage` (name, url, description, isPartOf) and breadcrumb | Term name, description, URL |
 
 - Only tags a site hasn't set are added; existing values are never
@@ -76,10 +76,14 @@ It takes an absolute URL, a site path or a URI like `public://share.jpg`. Use a
 JPG or PNG at least 1200 x 630; social sites don't show SVG. With no default
 set, pages share no image.
 
-Every page shares this one image; the module doesn't look at a node's fields,
-so it behaves the same on any content type. To give a content type its own
-image, set `og_image` and `twitter_cards_image` on that type's metatag
-defaults (for example `[node:field_image:entity:url]`).
+On its own, the module shares this one image on every page; it doesn't look at
+a node's fields, so it behaves the same on any content type.
+
+To choose a different image, for one content type or for a whole group of
+sites, implement `hook_penn_global_metatags_social_image_alter()` (see
+`penn_global_metatags.api.php`). It receives the default image and, on content
+pages, the node; `[node:social-image]` and `[site:social-image]` both pass
+through it.
 
 Don't also enable schema_web_page's own `breadcrumb` tag; it writes the same
 property as this module's breadcrumb.

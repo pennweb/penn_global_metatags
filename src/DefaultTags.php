@@ -17,9 +17,10 @@ class DefaultTags {
   /**
    * Tags this module adds, keyed by metatag defaults ID.
    *
-   * Values use [site:*] tokens so each site describes itself. Every page
-   * shares the site's one default image, set in the module's settings; content
-   * and term defaults inherit it from global rather than picking their own.
+   * Values use [site:*] tokens so each site describes itself. The share image
+   * is the site's default, set in the module's settings; content pages use
+   * [node:social-image] so other modules can swap in a per-node image through
+   * hook_penn_global_metatags_social_image_alter().
    */
   public const DEFAULTS = [
     // Social sharing for every page; content and term defaults refine it.
@@ -56,8 +57,12 @@ class DefaultTags {
       'og_title' => '[node:title]',
       'og_description' => '[node:summary]',
       'og_url' => '[node:url]',
+      'og_image' => '[node:social-image]',
+      'og_image_alt' => '[node:social-image-alt]',
       'twitter_cards_title' => '[node:title]',
       'twitter_cards_description' => '[node:summary]',
+      'twitter_cards_image' => '[node:social-image]',
+      'twitter_cards_image_alt' => '[node:social-image-alt]',
     ],
     'taxonomy_term' => [
       'schema_web_page_type' => 'CollectionPage',

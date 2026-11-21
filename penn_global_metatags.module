@@ -6,6 +6,7 @@
  */
 
 use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\node\NodeInterface;
 
 /**
  * Implements hook_token_info().
@@ -28,6 +29,15 @@ function penn_global_metatags_token_info() {
           'name' => t('Default social sharing image alt text'),
         ],
       ],
+      'node' => [
+        'social-image' => [
+          'name' => t('Social sharing image'),
+          'description' => t("The site's default sharing image, unless a module sets one for this node with hook_penn_global_metatags_social_image_alter()."),
+        ],
+        'social-image-alt' => [
+          'name' => t('Social sharing image alt text'),
+        ],
+      ],
     ],
   ];
 }
@@ -43,20 +53,50 @@ function penn_global_metatags_tokens($type, $tokens, array $data, array $options
       ->build(\Drupal::routeMatch(), $bubbleable_metadata);
   }
 
-  if ($type === 'site' && (isset($tokens['social-image']) || isset($tokens['social-image-alt']))) {
-    $settings = \Drupal::config('penn_global_metatags.settings');
-    $bubbleable_metadata->addCacheableDependency($settings);
-    $url = penn_global_metatags_absolute_url(trim((string) $settings->get('default_image')));
+  $wants_image = isset($tokens['social-image']) || isset($tokens['social-image-alt']);
+  if ($wants_image && ($type === 'site' || ($type === 'node' && !empty($data['node'])))) {
+    $image = penn_global_metatags_social_image($type === 'node' ? $data['node'] : NULL, $bubbleable_metadata);
 
     if (isset($tokens['social-image'])) {
-      $replacements[$tokens['social-image']] = $url;
+      $replacements[$tokens['social-image']] = $image['url'];
     }
     if (isset($tokens['social-image-alt'])) {
-      $replacements[$tokens['social-image-alt']] = $url !== '' ? trim((string) $settings->get('default_image_alt')) : '';
+      $replacements[$tokens['social-image-alt']] = $image['alt'];
     }
   }
 
   return $replacements;
+}
+
+/**
+ * Returns the image a page shares on social media.
+ *
+ * Starts from the site's default image, then lets modules change it with
+ * hook_penn_global_metatags_social_image_alter().
+ *
+ * @param \Drupal\node\NodeInterface|null $node
+ *   The node being shared, or NULL for site-wide tokens.
+ * @param \Drupal\Core\Render\BubbleableMetadata $bubbleable_metadata
+ *   Collects the cacheability of whatever the image came from.
+ *
+ * @return array{url: string, alt: string}
+ *   The absolute image URL, or '' for none, and its alt text.
+ */
+function penn_global_metatags_social_image(?NodeInterface $node, BubbleableMetadata $bubbleable_metadata): array {
+  $settings = \Drupal::config('penn_global_metatags.settings');
+  $bubbleable_metadata->addCacheableDependency($settings);
+
+  $image = [
+    'url' => trim((string) $settings->get('default_image')),
+    'alt' => trim((string) $settings->get('default_image_alt')),
+  ];
+  \Drupal::moduleHandler()->alter('penn_global_metatags_social_image', $image, $node, $bubbleable_metadata);
+
+  $url = penn_global_metatags_absolute_url(trim((string) ($image['url'] ?? '')));
+  return [
+    'url' => $url,
+    'alt' => $url !== '' ? trim((string) ($image['alt'] ?? '')) : '',
+  ];
 }
 
 /**

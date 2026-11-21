@@ -6,8 +6,10 @@ use Drupal\Core\Cache\Context\CacheContextsManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\Core\Extension\ModuleHandler;
 use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\node\NodeInterface;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -15,10 +17,17 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Tests the [site:social-image] tokens.
+ * Tests the [site:social-image] and [node:social-image] tokens.
  */
 #[Group('penn_global_metatags')]
 class SocialImageTest extends UnitTestCase {
+
+  /**
+   * Stands in for hook_penn_global_metatags_social_image_alter(), if set.
+   *
+   * @var callable|null
+   */
+  protected $alter = NULL;
 
   /**
    * {@inheritdoc}
@@ -58,15 +67,60 @@ class SocialImageTest extends UnitTestCase {
   }
 
   /**
-   * Tests that nodes get no image token of their own.
+   * Tests that a node shares the site default when no module changes it.
    */
-  public function testNoNodeImageToken(): void {
+  public function testNodeUsesSiteDefault(): void {
     $this->setUpContainer('/share.jpg');
 
-    $replacements = penn_global_metatags_tokens('node', ['social-image' => '[node:social-image]'], [], [], new BubbleableMetadata());
+    $replacements = $this->nodeTokens($this->createMock(NodeInterface::class));
 
-    $this->assertSame([], $replacements);
-    $this->assertArrayNotHasKey('node', penn_global_metatags_token_info()['tokens']);
+    $this->assertSame('https://www.example.edu/share.jpg', $replacements['[node:social-image]']);
+    $this->assertSame('Campus at dusk', $replacements['[node:social-image-alt]']);
+  }
+
+  /**
+   * Tests that the alter hook can swap in a node's image, given as a URI.
+   */
+  public function testAlterSetsNodeImage(): void {
+    $this->setUpContainer('/share.jpg');
+    $node = $this->createMock(NodeInterface::class);
+    $seen = NULL;
+    $this->alter = static function (array &$image, ?NodeInterface $hook_node) use (&$seen): void {
+      $seen = $hook_node;
+      $image = ['url' => 'public://story.jpg', 'alt' => 'Students on Locust Walk'];
+    };
+
+    $replacements = $this->nodeTokens($node);
+
+    $this->assertSame($node, $seen);
+    $this->assertSame('https://www.example.edu/sites/default/files/story.jpg', $replacements['[node:social-image]']);
+    $this->assertSame('Students on Locust Walk', $replacements['[node:social-image-alt]']);
+  }
+
+  /**
+   * Tests that the alter hook can fill in an image when the site has none.
+   */
+  public function testAlterSuppliesFallbackForSiteToken(): void {
+    $this->setUpContainer('');
+    $this->alter = static function (array &$image, ?NodeInterface $node): void {
+      if ($image['url'] === '' && $node === NULL) {
+        $image = ['url' => '/themes/custom/penn_global/share.jpg', 'alt' => 'Penn Logo'];
+      }
+    };
+
+    $replacements = penn_global_metatags_tokens('site', ['social-image' => '[site:social-image]'], [], [], new BubbleableMetadata());
+
+    $this->assertSame('https://www.example.edu/themes/custom/penn_global/share.jpg', $replacements['[site:social-image]']);
+  }
+
+  /**
+   * Replaces the node image tokens for a node.
+   */
+  protected function nodeTokens(NodeInterface $node): array {
+    return penn_global_metatags_tokens('node', [
+      'social-image' => '[node:social-image]',
+      'social-image-alt' => '[node:social-image-alt]',
+    ], ['node' => $node], [], new BubbleableMetadata());
   }
 
   /**
@@ -101,7 +155,33 @@ class SocialImageTest extends UnitTestCase {
     $container->set('file_url_generator', $file_url_generator);
     $container->set('request_stack', $request_stack);
     $container->set('cache_contexts_manager', $contexts);
+    $container->set('module_handler', $this->createModuleHandler());
     \Drupal::setContainer($container);
+  }
+
+  /**
+   * Creates a module handler whose alter() runs $this->alter.
+   */
+  protected function createModuleHandler(): ModuleHandler {
+    $test = $this;
+    return new class($test) extends ModuleHandler {
+
+      public function __construct(protected SocialImageTest $test) {}
+
+      public function alter($type, &$data, &$context1 = NULL, &$context2 = NULL) {
+        if ($type === 'penn_global_metatags_social_image' && $this->test->getAlter()) {
+          ($this->test->getAlter())($data, $context1, $context2);
+        }
+      }
+
+    };
+  }
+
+  /**
+   * Returns the stand-in alter hook.
+   */
+  public function getAlter(): ?callable {
+    return $this->alter;
   }
 
 }
